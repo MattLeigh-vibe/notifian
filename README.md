@@ -1,3 +1,15 @@
+## Fork changes
+
+This is a personal fork of [notifian](https://github.com/originalauthor/notifian).
+
+Changes from upstream:
+
+- **`⏰` marker**: Use `⏰ YYYY-MM-DD HH:MM` on any Obsidian task to schedule an exact-time notification. This replaces relying on `📅` due dates, which flooded notifications for tasks that simply had a due date but didn't need a reminder.
+- **`📅` and `🛫` removed from scanning**: Due dates and start dates are ignored — only `⏰` and `⏳` trigger notifications.
+- **Build fixes**: Resolved native `.so` conflicts with `op-sqlite`; arm64-v8a only build.
+
+---
+
 # IMPORTANT NOTICE
 From the 15th of December 2025 Notifian will NOT BE AVAILABLE TO USERS IN THE USA. 
 
