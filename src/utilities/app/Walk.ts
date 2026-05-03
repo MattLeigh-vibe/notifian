@@ -260,9 +260,13 @@ export async function rescanDirs(dirs: string[]) {
               return;
             }
             const hasTime = dateMatch[1] !== undefined;
-            const date = new Date(dateMatch[0].replace(' ', 'T'));
+            const dateParts = dateMatch[0].slice(0, 10).split('-').map(Number);
+            const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
             if (!hasTime) {
+              if (d.includes('⏰')) {
+                return;
+              }
               // Determine time from settings
               date.setHours(9);
               date.setMinutes(0);
@@ -293,8 +297,12 @@ export async function rescanDirs(dirs: string[]) {
                   date.setMinutes(dueMinutes);
                 }
               }
+            } else {
+              const timeStr = dateMatch[1].slice(1);
+              const [hh, mm] = timeStr.split(':').map(Number);
+              date.setHours(hh);
+              date.setMinutes(mm);
             }
-
             if (after(date, now) && (soonest === undefined || before(date, soonest))) {
               soonest = date;
             }
