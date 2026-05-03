@@ -15,12 +15,11 @@ import { state, store } from '../../atoms';
 import { flushErrorToFile } from '../Error';
 import { utf8ToBytes } from '@noble/hashes/utils.js';
 
-// Obsidian "Tasks" Support
-// Do this match first on each file
-const taskFormatRegex = /- \[ \] (.*)((\[start::|\[scheduled::|\[due::|🛫|⏳|📅)( *)\d{4}-\d{2}-\d{2}\]{0,1})+(\s+)/g;
+// Add ⏰ with optional time — tell your vibe coding agent to change it to:
+const taskFormatRegex = /- \[ \] (.*)((\[start::|\[scheduled::|\[due::|⏳|⏰)( *)\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2})?\]{0,1})+(\s+)/g;
 
 // For each of the above matches look for ANY correctly formatted dates, schedule the earliest one
-const taskDatesRegex = /(\[(start|scheduled|due):: \d{4}-\d{2}-\d{2}\])|(🛫|⏳|📅)( *)(\d{4}-\d{2}-\d{2})/g;
+const taskDatesRegex = /(\[(start|scheduled|due):: \d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2})?\])|(⏳|⏰)( *)(\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2})?)/g;
 
 export async function rescanDirs(dirs: string[]) {
   const st = store.get(state);
@@ -256,38 +255,43 @@ export async function rescanDirs(dirs: string[]) {
           let scheduledCount = 0;
           let dueCount = 0;
           dateMatches?.forEach(d => {
-            const isDataviewFormat = d.includes('::');
-            const datePart = d.split(' ').filter(s => s !== '')[1];
-            const date = new Date(isDataviewFormat ? datePart.slice(0, -1) : datePart);
+            const dateMatch = d.match(/\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2})?/);
+            if (!dateMatch) {
+              return;
+            }
+            const hasTime = dateMatch[1] !== undefined;
+            const date = new Date(dateMatch[0].replace(' ', 'T'));
 
-            // Determine time from settings
-            date.setHours(9);
-            date.setMinutes(0);
-            if (st !== null && st.scanTasks !== undefined) {
-              if (d.includes('start') || d.includes('🛫')) {
-                if (startCount > 0) {
-                  return;
+            if (!hasTime) {
+              // Determine time from settings
+              date.setHours(9);
+              date.setMinutes(0);
+              if (st !== null && st.scanTasks !== undefined) {
+                if (d.includes('start')) {
+                  if (startCount > 0) {
+                    return;
+                  }
+                  startCount++;
+
+                  date.setHours(startHours);
+                  date.setMinutes(startMinutes);
+                } else if (d.includes('scheduled') || d.includes('⏳')) {
+                  if (scheduledCount > 0) {
+                    return;
+                  }
+                  scheduledCount++;
+
+                  date.setHours(scheduledHours);
+                  date.setMinutes(scheduledMinutes);
+                } else {
+                  if (dueCount > 0) {
+                    return;
+                  }
+                  dueCount++;
+
+                  date.setHours(dueHours);
+                  date.setMinutes(dueMinutes);
                 }
-                startCount++;
-
-                date.setHours(startHours);
-                date.setMinutes(startMinutes);
-              } else if (d.includes('scheduled') || d.includes('⏳')) {
-                if (scheduledCount > 0) {
-                  return;
-                }
-                scheduledCount++;
-
-                date.setHours(scheduledHours);
-                date.setMinutes(scheduledMinutes);
-              } else {
-                if (dueCount > 0) {
-                  return;
-                }
-                dueCount++;
-
-                date.setHours(dueHours);
-                date.setMinutes(dueMinutes);
               }
             }
 
